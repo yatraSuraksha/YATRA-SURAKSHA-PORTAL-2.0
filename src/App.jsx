@@ -3178,7 +3178,7 @@ function App() {
           </div>
           
           <div className="geofence-panel-content">
-            {/* Stats Section */}
+            {/* Stats Section  */}
             {geofenceStats && (
               <div className="geofence-stats">
                 <div className="stat-item">
