@@ -2036,6 +2036,11 @@
 .retry-btn:hover { filter: brightness(1.1); }
 
 /* MapLibre Overrides */
+.maplibregl-ctrl-top-left {
+  top: 20px !important;
+  left: 320px !important; /* Position to the right of users panel */
+}
+
 .maplibregl-ctrl-top-right {
   top: 20px !important;
   right: 350px !important; /* Move to the left of alerts panel */

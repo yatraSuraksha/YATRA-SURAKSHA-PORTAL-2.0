@@ -2102,10 +2102,10 @@ function App() {
       return
     }
 
-    // Add navigation controls
-    map.current.addControl(new maplibregl.NavigationControl(), 'bottom-right')
+    // Add navigation controls (compass only, no zoom)
+    map.current.addControl(new maplibregl.NavigationControl({ showCompass: true, showZoom: false }), 'top-left')
     map.current.addControl(new maplibregl.ScaleControl(), 'bottom-left')
-    map.current.addControl(new maplibregl.FullscreenControl(), 'bottom-right')
+    map.current.addControl(new maplibregl.FullscreenControl(), 'top-left')
 
     map.current.on('load', () => {
       setMapLoaded(true)
