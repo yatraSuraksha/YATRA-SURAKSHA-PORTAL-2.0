@@ -1,0 +1,596 @@
+{
+  "accessors": [
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 44010,
+      "max": [
+        572.4495239257813,
+        778.6527099609375,
+        -627.7984008789063
+      ],
+      "min": [
+        -460.5797424316406,
+        -661.4937744140625,
+        -3958.636474609375
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 528120,
+      "componentType": 5126,
+      "count": 44010,
+      "max": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "min": [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 44010,
+      "max": [
+        1.0,
+        1.0
+      ],
+      "min": [
+        0.0,
+        0.0
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "componentType": 5125,
+      "count": 169248,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 1056240,
+      "componentType": 5126,
+      "count": 18165,
+      "max": [
+        572.50634765625,
+        498.90191650390625,
+        2327.24609375
+      ],
+      "min": [
+        -462.6583557128906,
+        -81.7769775390625,
+        -3827.754150390625
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 1274220,
+      "componentType": 5126,
+      "count": 18165,
+      "max": [
+        1.0,
+        1.0,
+        0.9924556016921997
+      ],
+      "min": [
+        -1.0,
+        -1.0,
+        -0.992176353931427
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 352080,
+      "componentType": 5126,
+      "count": 18165,
+      "max": [
+        1.0,
+        1.0
+      ],
+      "min": [
+        0.0,
+        0.0
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 676992,
+      "componentType": 5125,
+      "count": 95256,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 1492200,
+      "componentType": 5126,
+      "count": 4248,
+      "max": [
+        575.9795532226563,
+        502.3426208496094,
+        -682.1112670898438
+      ],
+      "min": [
+        -463.4927062988281,
+        65.8777847290039,
+        -3903.80615234375
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 1543176,
+      "componentType": 5126,
+      "count": 4248,
+      "max": [
+        0.9748094081878662,
+        1.0,
+        0.9503799676895142
+      ],
+      "min": [
+        -0.9748101234436035,
+        -1.0,
+        -0.9503800272941589
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 497400,
+      "componentType": 5126,
+      "count": 4248,
+      "max": [
+        1.0,
+        1.0
+      ],
+      "min": [
+        0.0,
+        0.0
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 1058016,
+      "componentType": 5125,
+      "count": 18144,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 1594152,
+      "componentType": 5126,
+      "count": 48960,
+      "max": [
+        576.8385620117188,
+        580.9605102539063,
+        -753.22998046875
+      ],
+      "min": [
+        -466.1496887207031,
+        82.15162658691406,
+        -3833.204833984375
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 2181672,
+      "componentType": 5126,
+      "count": 48960,
+      "max": [
+        0.8250317573547363,
+        1.0,
+        0.8250422477722168
+      ],
+      "min": [
+        -0.82503741979599,
+        -1.0,
+        -0.8250309824943542
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 531384,
+      "componentType": 5126,
+      "count": 48960,
+      "max": [
+        1.0,
+        1.0
+      ],
+      "min": [
+        0.0,
+        0.0
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 1130592,
+      "componentType": 5125,
+      "count": 223920,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 2769192,
+      "componentType": 5126,
+      "count": 1447,
+      "max": [
+        572.50634765625,
+        373.5677185058594,
+        -757.0900268554688
+      ],
+      "min": [
+        569.9122924804688,
+        209.517822265625,
+        -3827.753662109375
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 2786556,
+      "componentType": 5126,
+      "count": 1447,
+      "max": [
+        1.0,
+        1.0,
+        0.987274706363678
+      ],
+      "min": [
+        -1.0,
+        -1.0,
+        -0.9915147423744202
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 923064,
+      "componentType": 5126,
+      "count": 1447,
+      "max": [
+        1.0,
+        1.0
+      ],
+      "min": [
+        0.0,
+        0.0
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 2026272,
+      "componentType": 5125,
+      "count": 7752,
+      "type": "SCALAR"
+    }
+  ],
+  "asset": {
+    "extras": {
+      "author": "adventurer (https://sketchfab.com/ahmagh2e)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/power-lines-high-voltage-electricity-1e59aeb1068144d1baba87d7cc97023b",
+      "title": "Power Lines High voltage electricity"
+    },
+    "generator": "Sketchfab-15.66.0",
+    "version": "2.0"
+  },
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteLength": 2057280,
+      "name": "floatBufferViews",
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteLength": 934640,
+      "byteOffset": 2057280,
+      "byteStride": 8,
+      "name": "floatBufferViews",
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 2803920,
+      "byteOffset": 2991920,
+      "byteStride": 12,
+      "name": "floatBufferViews",
+      "target": 34962
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 5795840,
+      "uri": "ene.bin"
+    }
+  ],
+  "extensionsUsed": [
+    "KHR_materials_specular"
+  ],
+  "materials": [
+    {
+      "doubleSided": true,
+      "name": "Power_Lines__0",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "metallicFactor": 0.0,
+        "roughnessFactor": 0.6
+      }
+    },
+    {
+      "doubleSided": true,
+      "name": "material",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.05629048726578098,
+          0.09760766351008722,
+          0.04401121355396262,
+          1.0
+        ],
+        "metallicFactor": 0.778669039753264,
+        "roughnessFactor": 0.9524317153998911
+      }
+    },
+    {
+      "doubleSided": true,
+      "extensions": {
+        "KHR_materials_specular": {
+          "specularColorFactor": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "specularFactor": 0.5165730028891516
+        }
+      },
+      "name": "Mat.4",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "metallicFactor": 0.19961965598371345,
+        "roughnessFactor": 0.9524317153998911
+      }
+    },
+    {
+      "doubleSided": true,
+      "name": "material_3",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "metallicFactor": 0.5409540295741854,
+        "roughnessFactor": 0.22133096024673604
+      }
+    },
+    {
+      "doubleSided": true,
+      "name": "Mat.2",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.03858753884586705,
+          0.015199963385300032,
+          0.0014850691751283288,
+          1.0
+        ],
+        "metallicFactor": 0.041142982530994375,
+        "roughnessFactor": 0.1542831368628934
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Power_Lines_sil_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 1,
+            "POSITION": 0,
+            "TEXCOORD_0": 2
+          },
+          "indices": 3,
+          "material": 1,
+          "mode": 4
+        }
+      ]
+    },
+    {
+      "name": "Power_Lines_Mat.4_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 5,
+            "POSITION": 4,
+            "TEXCOORD_0": 6
+          },
+          "indices": 7,
+          "material": 2,
+          "mode": 4
+        }
+      ]
+    },
+    {
+      "name": "Power_Lines_ww_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 9,
+            "POSITION": 8,
+            "TEXCOORD_0": 10
+          },
+          "indices": 11,
+          "material": 3,
+          "mode": 4
+        }
+      ]
+    },
+    {
+      "name": "Power_Lines_Mat.2_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 13,
+            "POSITION": 12,
+            "TEXCOORD_0": 14
+          },
+          "indices": 15,
+          "material": 4,
+          "mode": 4
+        }
+      ]
+    },
+    {
+      "name": "Power_Lines__0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 17,
+            "POSITION": 16,
+            "TEXCOORD_0": 18
+          },
+          "indices": 19,
+          "material": 0,
+          "mode": 4
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "children": [
+        1
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        2.220446049250313e-16,
+        -1.0,
+        0.0,
+        0.0,
+        1.0,
+        2.220446049250313e-16,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "Sketchfab_model"
+    },
+    {
+      "children": [
+        2
+      ],
+      "matrix": [
+        0.009999999776482582,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.009999999776482582,
+        0.0,
+        0.0,
+        -0.009999999776482582,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "2a2dbf8dfa004b9e9080ae6822f0f2e1.fbx"
+    },
+    {
+      "children": [
+        3
+      ],
+      "name": "RootNode"
+    },
+    {
+      "children": [
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        -36.625003814697266,
+        661.2920532226563,
+        2026.6729736328125,
+        1.0
+      ],
+      "name": "Power_Lines"
+    },
+    {
+      "mesh": 0,
+      "name": "Power_Lines_sil_0"
+    },
+    {
+      "mesh": 1,
+      "name": "Power_Lines_Mat.4_0"
+    },
+    {
+      "mesh": 2,
+      "name": "Power_Lines_ww_0"
+    },
+    {
+      "mesh": 3,
+      "name": "Power_Lines_Mat.2_0"
+    },
+    {
+      "mesh": 4,
+      "name": "Power_Lines__0"
+    }
+  ],
+  "scene": 0,
+  "scenes": [
+    {
+      "name": "Sketchfab_Scene",
+      "nodes": [
+        0
+      ]
+    }
+  ]
+}

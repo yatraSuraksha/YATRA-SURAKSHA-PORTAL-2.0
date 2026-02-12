@@ -673,6 +673,8 @@ function App() {
   const [socketConnected, setSocketConnected] = useState(false)
   const [users, setUsers] = useState({}) // Store user data
   const [selectedUser, setSelectedUser] = useState(null) // Selected user for detail view
+  const [userFullDetails, setUserFullDetails] = useState(null) // Full user details from admin:get-user-details
+  const [userDetailsLoading, setUserDetailsLoading] = useState(false) // Loading state for full user details
   const [userLocationHistory, setUserLocationHistory] = useState([])
   const [alerts, setAlerts] = useState([]) // Store all alerts
   // eslint-disable-next-line no-unused-vars
@@ -1283,6 +1285,10 @@ function App() {
         // Request ALL location history (no limit or very high limit)
         if (socketRef.current?.connected) {
           socketRef.current.emit('admin:get-user-location', { userId, limit: 10000 })
+          // Request full user details
+          setUserDetailsLoading(true)
+          setUserFullDetails(null)
+          socketRef.current.emit('admin:get-user-details', { userId })
         }
         
         // Fly to user location - handle both coordinate formats
@@ -1962,6 +1968,29 @@ function App() {
       setGeofenceStats(data)
     })
 
+    // ========== USER DETAILS EVENT ==========
+    
+    // Listen for full user details response
+    socketRef.current.on('admin:user-details', (data) => {
+      console.log('Full user details received:', data)
+      setUserFullDetails(data)
+      setUserDetailsLoading(false)
+      // Also update the selectedUser with richer profile data if available
+      if (data?.user) {
+        setSelectedUser(prev => prev ? {
+          ...prev,
+          ...data.user,
+          profilePicture: data.user.profilePicture || prev.profilePicture,
+          // Preserve location data from marker/location updates
+          latitude: prev.latitude,
+          longitude: prev.longitude,
+          battery: prev.battery ?? data.lastLocation?.battery,
+          speed: prev.speed ?? data.lastLocation?.speed,
+          accuracy: prev.accuracy ?? data.lastLocation?.accuracy,
+        } : null)
+      }
+    })
+
     // ========== SAFETY SCORE EVENTS ==========
     
     // Listen for all safety scores
@@ -2015,7 +2044,7 @@ function App() {
     }
   }, [selectedUser])
 
-  // Fetch videos when an alert is selected
+  // Fetch videos when an alert is selected and also fetch full user details for alert's user
   useEffect(() => {
     if (selectedAlert) {
       const alertId = selectedAlert.id || selectedAlert.alertId || selectedAlert._id
@@ -2024,8 +2053,21 @@ function App() {
         setVideos([]) // Clear previous videos
         socketRef.current.emit('admin:get-videos-by-alert', { alertId })
       }
+      // Fetch full user details for the alert's user
+      const userId = selectedAlert.user?.id || selectedAlert.user?.userId || selectedAlert.userId
+      if (userId && socketRef.current?.connected) {
+        setUserDetailsLoading(true)
+        setUserFullDetails(null)
+        socketRef.current.emit('admin:get-user-details', { userId })
+      }
+    } else {
+      // Clear user details when alert is deselected (only if no user panel is open)
+      if (!selectedUser) {
+        setUserFullDetails(null)
+        setUserDetailsLoading(false)
+      }
     }
-  }, [selectedAlert])
+  }, [selectedAlert, selectedUser])
 
   // Update markers when mapLoaded changes - request fresh data when map is ready
   useEffect(() => {
@@ -2201,6 +2243,8 @@ function App() {
   const closeUserDetail = () => {
     setSelectedUser(null)
     setUserLocationHistory([])
+    setUserFullDetails(null)
+    setUserDetailsLoading(false)
   }
 
   // Subscribe to user updates
@@ -2622,7 +2666,7 @@ function App() {
       {/* Alert Detail Panel - Shows when an alert is selected */}
       {selectedAlert && (
         <div className="alert-detail-panel">
-          <button className="close-btn" onClick={() => setSelectedAlert(null)}>×</button>
+          <button className="close-btn" onClick={() => { setSelectedAlert(null); if (!selectedUser) { setUserFullDetails(null); setUserDetailsLoading(false); } }}>×</button>
           
           {/* Left Side - Alert Header */}
           <div className="alert-detail-left">
@@ -2641,16 +2685,36 @@ function App() {
             {/* User Card */}
             <div className="alert-user-card">
               <img 
-                src={selectedAlert.user?.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedAlert.user?.name || 'User')}&background=ef4444&color=fff&size=48`}
-                alt={selectedAlert.user?.name || 'User'}
+                src={userFullDetails?.user?.profilePicture || selectedAlert.user?.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedAlert.user?.name || userFullDetails?.user?.name || 'User')}&background=ef4444&color=fff&size=48`}
+                alt={selectedAlert.user?.name || userFullDetails?.user?.name || 'User'}
                 className="alert-user-avatar"
                 onError={(e) => {
                   e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedAlert.user?.name || 'User')}&background=ef4444&color=fff&size=48`
                 }}
               />
-              <span className="user-name">{selectedAlert.user?.name || 'Unknown User'}</span>
-              {selectedAlert.user?.phone && <span className="user-contact">{selectedAlert.user.phone}</span>}
+              <span className="user-name">{userFullDetails?.user?.name || selectedAlert.user?.name || 'Unknown User'}</span>
+              {(userFullDetails?.user?.phoneNumber || selectedAlert.user?.phone) && (
+                <span className="user-contact">{userFullDetails?.user?.phoneNumber || selectedAlert.user?.phone}</span>
+              )}
+              {userFullDetails?.user?.email && (
+                <span className="user-contact">{userFullDetails.user.email}</span>
+              )}
             </div>
+
+            {/* Role & Verification Badges */}
+            {userFullDetails?.user && (
+              <div className="user-badges alert-user-badges">
+                {userFullDetails.user.role && (
+                  <span className={`user-role-badge ${userFullDetails.user.role}`}>{userFullDetails.user.role}</span>
+                )}
+                {userFullDetails.user.isVerified && (
+                  <span className="user-verified-badge">✓ Verified</span>
+                )}
+                <span className={`user-status-badge-small ${userFullDetails.user.isOnline ? 'active' : 'inactive'}`}>
+                  {userFullDetails.user.isOnline ? 'Online' : 'Offline'}
+                </span>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="alert-detail-actions">
@@ -2659,13 +2723,18 @@ function App() {
                   <span className="icon">◎</span> Focus Map
                 </button>
               )}
-              {selectedAlert.user?.phone && (
-                <a href={`tel:${selectedAlert.user.phone}`} className="action-btn call">
+              {(userFullDetails?.user?.phoneNumber || selectedAlert.user?.phone) && (
+                <a href={`tel:${userFullDetails?.user?.phoneNumber || selectedAlert.user.phone}`} className="action-btn call">
                   <span className="icon">✆</span> Call User
                 </a>
               )}
-              {selectedAlert.user?.id && (
-                <button className="action-btn" onClick={() => { handleUserClick(selectedAlert.user.id); setSelectedAlert(null); }}>
+              {userFullDetails?.user?.whatsappNumber && (
+                <a href={`https://wa.me/${userFullDetails.user.whatsappNumber.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="action-btn whatsapp">
+                  <span className="icon">💬</span> WhatsApp
+                </a>
+              )}
+              {(selectedAlert.user?.id || userFullDetails?.user?.userId) && (
+                <button className="action-btn" onClick={() => { handleUserClick(selectedAlert.user?.id || userFullDetails?.user?.userId); setSelectedAlert(null); }}>
                   <span className="icon">●</span> View User
                 </button>
               )}
@@ -2677,6 +2746,14 @@ function App() {
 
           {/* Right Side - Details Grid */}
           <div className="alert-detail-right">
+            {/* Loading indicator */}
+            {userDetailsLoading && (
+              <div className="user-details-loading">
+                <div className="loading-spinner-small"></div>
+                <span>Loading full user profile...</span>
+              </div>
+            )}
+
             {/* Row 1: Alert Info */}
             <div className="info-row">
               <div className="info-block">
@@ -2715,11 +2792,11 @@ function App() {
                   )}
                 </>
               )}
-              {(selectedAlert.battery !== undefined || selectedAlert.batteryLevel !== undefined) && (
+              {(selectedAlert.battery !== undefined || selectedAlert.batteryLevel !== undefined || userFullDetails?.lastLocation?.battery !== undefined) && (
                 <div className="info-block">
                   <span className="info-label">Battery</span>
-                  <span className={`info-value ${(selectedAlert.battery || selectedAlert.batteryLevel) <= 20 ? 'danger' : ''}`}>
-                    {selectedAlert.battery ?? selectedAlert.batteryLevel}%
+                  <span className={`info-value ${((selectedAlert.battery || selectedAlert.batteryLevel || userFullDetails?.lastLocation?.battery) <= 20) ? 'danger' : ''}`}>
+                    {selectedAlert.battery ?? selectedAlert.batteryLevel ?? userFullDetails?.lastLocation?.battery ?? 'N/A'}%
                   </span>
                 </div>
               )}
@@ -2761,27 +2838,136 @@ function App() {
               </div>
             )}
 
-            {/* Row 4: Additional Info */}
+            {/* Row 4: User Contact & Identity Info */}
             <div className="info-row">
               <div className="info-block">
                 <span className="info-label">Received At</span>
                 <span className="info-value">{formatTime(selectedAlert.receivedAt || selectedAlert.timestamp)}</span>
               </div>
-              {selectedAlert.user?.id && (
+              {(selectedAlert.user?.id || userFullDetails?.user?.userId) && (
                 <div className="info-block">
                   <span className="info-label">User ID</span>
-                  <span className="info-value mono">{selectedAlert.user.id}</span>
+                  <span className="info-value mono">{selectedAlert.user?.id || userFullDetails?.user?.userId}</span>
                 </div>
               )}
-              {selectedAlert.user?.email && (
+              {(selectedAlert.user?.email || userFullDetails?.user?.email) && (
                 <div className="info-block wide">
                   <span className="info-label">Email</span>
-                  <span className="info-value">{selectedAlert.user.email}</span>
+                  <span className="info-value">{userFullDetails?.user?.email || selectedAlert.user?.email}</span>
                 </div>
               )}
             </div>
 
-            {/* Row 5: Related Videos */}
+            {/* Row 5: Full User Contact Info from userFullDetails */}
+            {userFullDetails?.user && (
+              <div className="info-row">
+                {userFullDetails.user.phoneNumber && (
+                  <div className="info-block">
+                    <span className="info-label">Phone</span>
+                    <span className="info-value">{userFullDetails.user.phoneNumber}</span>
+                  </div>
+                )}
+                {userFullDetails.user.alternativePhoneNumber && (
+                  <div className="info-block">
+                    <span className="info-label">Alt Phone</span>
+                    <span className="info-value">{userFullDetails.user.alternativePhoneNumber}</span>
+                  </div>
+                )}
+                {userFullDetails.user.gender && (
+                  <div className="info-block">
+                    <span className="info-label">Gender</span>
+                    <span className="info-value" style={{textTransform: 'capitalize'}}>{userFullDetails.user.gender}</span>
+                  </div>
+                )}
+                {userFullDetails.user.nationality && (
+                  <div className="info-block">
+                    <span className="info-label">Nationality</span>
+                    <span className="info-value">{userFullDetails.user.nationality}</span>
+                  </div>
+                )}
+                {userFullDetails.user.dateOfBirth && (
+                  <div className="info-block">
+                    <span className="info-label">Date of Birth</span>
+                    <span className="info-value">{new Date(userFullDetails.user.dateOfBirth).toLocaleDateString()}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Row 6: Health / Medical Info */}
+            {userFullDetails?.user?.healthInfo && (
+              <div className="info-row detail-section-row">
+                <div className="info-block full">
+                  <span className="info-label">🏥 Medical Information</span>
+                  <div className="detail-sub-grid">
+                    {userFullDetails.user.healthInfo.bloodGroup && (
+                      <div className="detail-sub-item">
+                        <span className="sub-label">Blood Group</span>
+                        <span className="sub-value blood-group">{userFullDetails.user.healthInfo.bloodGroup}</span>
+                      </div>
+                    )}
+                    {userFullDetails.user.healthInfo.allergies?.length > 0 && (
+                      <div className="detail-sub-item">
+                        <span className="sub-label">Allergies</span>
+                        <div className="tag-list">
+                          {userFullDetails.user.healthInfo.allergies.map((a, i) => (
+                            <span key={i} className="tag danger">{a}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {userFullDetails.user.healthInfo.chronicDiseases?.length > 0 && (
+                      <div className="detail-sub-item">
+                        <span className="sub-label">Chronic Diseases</span>
+                        <div className="tag-list">
+                          {userFullDetails.user.healthInfo.chronicDiseases.map((d, i) => (
+                            <span key={i} className="tag warning">{d}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {userFullDetails.user.healthInfo.medications?.length > 0 && (
+                      <div className="detail-sub-item">
+                        <span className="sub-label">Medications</span>
+                        <div className="tag-list">
+                          {userFullDetails.user.healthInfo.medications.map((m, i) => (
+                            <span key={i} className="tag info">{m}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {!userFullDetails.user.healthInfo.bloodGroup && 
+                     !userFullDetails.user.healthInfo.allergies?.length && 
+                     !userFullDetails.user.healthInfo.chronicDiseases?.length && 
+                     !userFullDetails.user.healthInfo.medications?.length && (
+                      <span className="no-data-text">No medical information provided</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Row 7: Emergency Contacts */}
+            {userFullDetails?.user?.emergencyContacts?.length > 0 && (
+              <div className="info-row detail-section-row">
+                <div className="info-block full">
+                  <span className="info-label">🆘 Emergency Contacts</span>
+                  <div className="emergency-contacts-list">
+                    {userFullDetails.user.emergencyContacts.map((contact, i) => (
+                      <div key={i} className="emergency-contact-card">
+                        <div className="ec-info">
+                          <span className="ec-name">{contact.name}</span>
+                          <span className="ec-relation">{contact.relation}</span>
+                        </div>
+                        <a href={`tel:${contact.phoneNumber}`} className="ec-phone">{contact.phoneNumber}</a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Row 8: Related Videos */}
             <div className="info-row videos-row">
               <div className="info-block full">
                 <span className="info-label">
@@ -2838,35 +3024,47 @@ function App() {
           <div className="user-detail-left">
             <div className="user-detail-avatar">
               <img 
-                src={selectedUser.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedUser.name || 'User')}&background=4f46e5&color=fff&size=80`}
+                src={selectedUser.profilePicture || userFullDetails?.user?.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedUser.name || 'User')}&background=4f46e5&color=fff&size=80`}
                 alt={selectedUser.name || 'User'}
                 onError={(e) => {
                   e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedUser.name || 'User')}&background=4f46e5&color=fff&size=80`
                 }}
               />
             </div>
-            <h2>{selectedUser.name || 'Unknown User'}</h2>
-            <span className={`user-status-badge ${selectedUser.isOnline !== false ? 'active' : 'inactive'}`}>
-              {selectedUser.isOnline !== false ? 'Online' : 'Offline'}
+            <h2>{selectedUser.name || userFullDetails?.user?.name || 'Unknown User'}</h2>
+            <span className={`user-status-badge ${(selectedUser.isOnline !== false || userFullDetails?.user?.isOnline) ? 'active' : 'inactive'}`}>
+              {(selectedUser.isOnline !== false || userFullDetails?.user?.isOnline) ? 'Online' : 'Offline'}
             </span>
+
+            {/* Role & Verification Badges */}
+            {userFullDetails?.user && (
+              <div className="user-badges">
+                {userFullDetails.user.role && (
+                  <span className={`user-role-badge ${userFullDetails.user.role}`}>{userFullDetails.user.role}</span>
+                )}
+                {userFullDetails.user.isVerified && (
+                  <span className="user-verified-badge">✓ Verified</span>
+                )}
+              </div>
+            )}
             
             {/* Quick Stats Card */}
             <div className="user-quick-stats">
               <div className="quick-stat">
                 <span className="stat-icon battery"></span>
-                <span className={`stat-value ${(selectedUser.battery <= 20) ? 'danger' : ''}`}>
-                  {selectedUser.battery ? `${Math.round(selectedUser.battery)}%` : 'N/A'}
+                <span className={`stat-value ${((selectedUser.battery || userFullDetails?.lastLocation?.battery) <= 20) ? 'danger' : ''}`}>
+                  {selectedUser.battery ? `${Math.round(selectedUser.battery)}%` : userFullDetails?.lastLocation?.battery ? `${Math.round(userFullDetails.lastLocation.battery)}%` : 'N/A'}
                 </span>
                 <span className="stat-label">Battery</span>
               </div>
               <div className="quick-stat">
                 <span className="stat-icon accuracy"></span>
-                <span className="stat-value">{selectedUser.accuracy ? `${Math.round(selectedUser.accuracy)}m` : 'N/A'}</span>
+                <span className="stat-value">{selectedUser.accuracy ? `${Math.round(selectedUser.accuracy)}m` : userFullDetails?.lastLocation?.accuracy ? `${Math.round(userFullDetails.lastLocation.accuracy)}m` : 'N/A'}</span>
                 <span className="stat-label">Accuracy</span>
               </div>
               <div className="quick-stat">
                 <span className="stat-icon speed"></span>
-                <span className="stat-value">{selectedUser.speed ? Math.round(selectedUser.speed) : '0'}</span>
+                <span className="stat-value">{selectedUser.speed ? Math.round(selectedUser.speed) : userFullDetails?.lastLocation?.speed ? Math.round(userFullDetails.lastLocation.speed) : '0'}</span>
                 <span className="stat-label">km/h</span>
               </div>
             </div>
@@ -2876,9 +3074,11 @@ function App() {
               <button 
                 className="action-btn primary" 
                 onClick={() => {
-                  if (selectedUser.longitude && selectedUser.latitude && map.current) {
+                  const lng = selectedUser.longitude || userFullDetails?.lastLocation?.longitude
+                  const lat = selectedUser.latitude || userFullDetails?.lastLocation?.latitude
+                  if (lng && lat && map.current) {
                     map.current.flyTo({
-                      center: [selectedUser.longitude, selectedUser.latitude],
+                      center: [lng, lat],
                       zoom: 17,
                       duration: 1500
                     })
@@ -2887,9 +3087,14 @@ function App() {
               >
                 <span className="icon">◎</span> Focus Map
               </button>
-              {(selectedUser.phone || selectedUser.phoneNumber) && (
-                <a href={`tel:${selectedUser.phone || selectedUser.phoneNumber}`} className="action-btn call">
+              {(selectedUser.phone || selectedUser.phoneNumber || userFullDetails?.user?.phoneNumber) && (
+                <a href={`tel:${selectedUser.phone || selectedUser.phoneNumber || userFullDetails?.user?.phoneNumber}`} className="action-btn call">
                   <span className="icon">✆</span> Call User
+                </a>
+              )}
+              {userFullDetails?.user?.whatsappNumber && (
+                <a href={`https://wa.me/${userFullDetails.user.whatsappNumber.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="action-btn whatsapp">
+                  <span className="icon">💬</span> WhatsApp
                 </a>
               )}
               <button className="action-btn" onClick={() => subscribeToUser(selectedUser.userId)}>
@@ -2908,21 +3113,29 @@ function App() {
 
           {/* Right Side - Details Grid */}
           <div className="user-detail-right">
+            {/* Loading indicator */}
+            {userDetailsLoading && (
+              <div className="user-details-loading">
+                <div className="loading-spinner-small"></div>
+                <span>Loading full profile...</span>
+              </div>
+            )}
+
             {/* Row 1: Basic Info */}
             <div className="info-row">
               <div className="info-block">
                 <span className="info-label">User ID</span>
-                <span className="info-value mono">{selectedUser.userId || 'N/A'}</span>
+                <span className="info-value mono">{selectedUser.userId || userFullDetails?.user?.userId || 'N/A'}</span>
               </div>
               <div className="info-block">
                 <span className="info-label">Status</span>
-                <span className={`info-value ${selectedUser.isOnline !== false ? 'status-online' : 'status-offline'}`}>
-                  {selectedUser.isOnline !== false ? 'Online' : 'Offline'}
+                <span className={`info-value ${(selectedUser.isOnline !== false || userFullDetails?.user?.isOnline) ? 'status-online' : 'status-offline'}`}>
+                  {(selectedUser.isOnline !== false || userFullDetails?.user?.isOnline) ? 'Online' : 'Offline'}
                 </span>
               </div>
               <div className="info-block">
                 <span className="info-label">Last Updated</span>
-                <span className="info-value">{formatTime(selectedUser.lastUpdated || selectedUser.timestamp)}</span>
+                <span className="info-value">{formatTime(selectedUser.lastUpdated || selectedUser.timestamp || userFullDetails?.lastLocation?.timestamp)}</span>
               </div>
             </div>
 
@@ -2930,32 +3143,76 @@ function App() {
             <div className="info-row">
               <div className="info-block wide">
                 <span className="info-label">Email</span>
-                <span className="info-value">{selectedUser.email || 'N/A'}</span>
+                <span className="info-value">{selectedUser.email || userFullDetails?.user?.email || 'N/A'}</span>
               </div>
               <div className="info-block">
                 <span className="info-label">Phone</span>
-                <span className="info-value">{selectedUser.phone || selectedUser.phoneNumber || 'N/A'}</span>
+                <span className="info-value">{selectedUser.phone || selectedUser.phoneNumber || userFullDetails?.user?.phoneNumber || 'N/A'}</span>
               </div>
+              {userFullDetails?.user?.alternativePhoneNumber && (
+                <div className="info-block">
+                  <span className="info-label">Alt Phone</span>
+                  <span className="info-value">{userFullDetails.user.alternativePhoneNumber}</span>
+                </div>
+              )}
             </div>
 
-            {/* Row 3: Location Info */}
+            {/* Row 3: Personal Info (from full details) */}
+            {userFullDetails?.user && (
+              <div className="info-row">
+                {userFullDetails.user.gender && (
+                  <div className="info-block">
+                    <span className="info-label">Gender</span>
+                    <span className="info-value" style={{textTransform: 'capitalize'}}>{userFullDetails.user.gender}</span>
+                  </div>
+                )}
+                {userFullDetails.user.dateOfBirth && (
+                  <div className="info-block">
+                    <span className="info-label">Date of Birth</span>
+                    <span className="info-value">{new Date(userFullDetails.user.dateOfBirth).toLocaleDateString()}</span>
+                  </div>
+                )}
+                {userFullDetails.user.nationality && (
+                  <div className="info-block">
+                    <span className="info-label">Nationality</span>
+                    <span className="info-value">{userFullDetails.user.nationality}</span>
+                  </div>
+                )}
+                {userFullDetails.user.registeredAt && (
+                  <div className="info-block">
+                    <span className="info-label">Registered</span>
+                    <span className="info-value">{formatTime(userFullDetails.user.registeredAt)}</span>
+                  </div>
+                )}
+                {userFullDetails.user.lastLogin && (
+                  <div className="info-block">
+                    <span className="info-label">Last Login</span>
+                    <span className="info-value">{formatTime(userFullDetails.user.lastLogin)}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Row 4: Location Info */}
             <div className="info-row">
               <div className="info-block wide">
                 <span className="info-label">Coordinates</span>
                 <span className="info-value mono">
-                  {selectedUser.latitude && selectedUser.longitude 
+                  {(selectedUser.latitude && selectedUser.longitude)
                     ? `${selectedUser.latitude?.toFixed(6)}, ${selectedUser.longitude?.toFixed(6)}`
-                    : 'N/A'
+                    : (userFullDetails?.lastLocation?.latitude && userFullDetails?.lastLocation?.longitude)
+                      ? `${userFullDetails.lastLocation.latitude.toFixed(6)}, ${userFullDetails.lastLocation.longitude.toFixed(6)}`
+                      : 'N/A'
                   }
                 </span>
               </div>
-              {selectedUser.altitude !== undefined && selectedUser.altitude !== null && (
+              {(selectedUser.altitude !== undefined && selectedUser.altitude !== null) && (
                 <div className="info-block">
                   <span className="info-label">Altitude</span>
                   <span className="info-value">{Math.round(selectedUser.altitude)} m</span>
                 </div>
               )}
-              {selectedUser.heading !== undefined && selectedUser.heading !== null && (
+              {(selectedUser.heading !== undefined && selectedUser.heading !== null) && (
                 <div className="info-block">
                   <span className="info-label">Heading</span>
                   <span className="info-value">{Math.round(selectedUser.heading)}°</span>
@@ -2963,7 +3220,7 @@ function App() {
               )}
             </div>
 
-            {/* Row 4: Device Info */}
+            {/* Row 5: Device Info */}
             <div className="info-row">
               {selectedUser.deviceModel && (
                 <div className="info-block">
@@ -2983,41 +3240,193 @@ function App() {
                   <span className="info-value">{selectedUser.appVersion}</span>
                 </div>
               )}
+              {userFullDetails?.user?.providers && userFullDetails.user.providers.length > 0 && (
+                <div className="info-block">
+                  <span className="info-label">Auth Providers</span>
+                  <span className="info-value">{userFullDetails.user.providers.join(', ')}</span>
+                </div>
+              )}
               {!selectedUser.deviceModel && !selectedUser.osVersion && !selectedUser.appVersion && (
                 <>
                   <div className="info-block">
                     <span className="info-label">Battery</span>
-                    <span className={`info-value ${(selectedUser.battery <= 20) ? 'danger' : ''}`}>
-                      {selectedUser.battery ? `${selectedUser.battery}%` : 'N/A'}
+                    <span className={`info-value ${((selectedUser.battery || userFullDetails?.lastLocation?.battery) <= 20) ? 'danger' : ''}`}>
+                      {selectedUser.battery ? `${selectedUser.battery}%` : userFullDetails?.lastLocation?.battery ? `${userFullDetails.lastLocation.battery}%` : 'N/A'}
                     </span>
                   </div>
                   <div className="info-block">
                     <span className="info-label">Speed</span>
-                    <span className="info-value">{selectedUser.speed ? `${selectedUser.speed} km/h` : '0 km/h'}</span>
+                    <span className="info-value">{selectedUser.speed ? `${selectedUser.speed} km/h` : userFullDetails?.lastLocation?.speed ? `${userFullDetails.lastLocation.speed} km/h` : '0 km/h'}</span>
                   </div>
                   <div className="info-block">
                     <span className="info-label">Accuracy</span>
-                    <span className="info-value">{selectedUser.accuracy ? `${Math.round(selectedUser.accuracy)} m` : 'N/A'}</span>
+                    <span className="info-value">{selectedUser.accuracy ? `${Math.round(selectedUser.accuracy)} m` : userFullDetails?.lastLocation?.accuracy ? `${Math.round(userFullDetails.lastLocation.accuracy)} m` : 'N/A'}</span>
                   </div>
                 </>
               )}
             </div>
 
-            {/* Row 5: Emergency Contacts if available */}
-            {selectedUser.emergencyContact && (
-              <div className="info-row">
-                <div className="info-block wide">
-                  <span className="info-label">Emergency Contact</span>
-                  <span className="info-value">{selectedUser.emergencyContact.name || 'N/A'}</span>
-                </div>
-                <div className="info-block">
-                  <span className="info-label">Emergency Phone</span>
-                  <span className="info-value">{selectedUser.emergencyContact.phone || 'N/A'}</span>
+            {/* Row 6: Health / Medical Info */}
+            {userFullDetails?.user?.healthInfo && (
+              <div className="info-row detail-section-row">
+                <div className="info-block full">
+                  <span className="info-label">🏥 Medical Information</span>
+                  <div className="detail-sub-grid">
+                    {userFullDetails.user.healthInfo.bloodGroup && (
+                      <div className="detail-sub-item">
+                        <span className="sub-label">Blood Group</span>
+                        <span className="sub-value blood-group">{userFullDetails.user.healthInfo.bloodGroup}</span>
+                      </div>
+                    )}
+                    {userFullDetails.user.healthInfo.allergies?.length > 0 && (
+                      <div className="detail-sub-item">
+                        <span className="sub-label">Allergies</span>
+                        <div className="tag-list">
+                          {userFullDetails.user.healthInfo.allergies.map((a, i) => (
+                            <span key={i} className="tag danger">{a}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {userFullDetails.user.healthInfo.chronicDiseases?.length > 0 && (
+                      <div className="detail-sub-item">
+                        <span className="sub-label">Chronic Diseases</span>
+                        <div className="tag-list">
+                          {userFullDetails.user.healthInfo.chronicDiseases.map((d, i) => (
+                            <span key={i} className="tag warning">{d}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {userFullDetails.user.healthInfo.medications?.length > 0 && (
+                      <div className="detail-sub-item">
+                        <span className="sub-label">Medications</span>
+                        <div className="tag-list">
+                          {userFullDetails.user.healthInfo.medications.map((m, i) => (
+                            <span key={i} className="tag info">{m}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {!userFullDetails.user.healthInfo.bloodGroup && 
+                     !userFullDetails.user.healthInfo.allergies?.length && 
+                     !userFullDetails.user.healthInfo.chronicDiseases?.length && 
+                     !userFullDetails.user.healthInfo.medications?.length && (
+                      <span className="no-data-text">No medical information provided</span>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Row 7: User Videos */}
+            {/* Row 7: Emergency Contacts */}
+            {(userFullDetails?.user?.emergencyContacts?.length > 0 || selectedUser.emergencyContact) && (
+              <div className="info-row detail-section-row">
+                <div className="info-block full">
+                  <span className="info-label">🆘 Emergency Contacts</span>
+                  <div className="emergency-contacts-list">
+                    {userFullDetails?.user?.emergencyContacts ? (
+                      userFullDetails.user.emergencyContacts.map((contact, i) => (
+                        <div key={i} className="emergency-contact-card">
+                          <div className="ec-info">
+                            <span className="ec-name">{contact.name}</span>
+                            <span className="ec-relation">{contact.relation}</span>
+                          </div>
+                          <a href={`tel:${contact.phoneNumber}`} className="ec-phone">{contact.phoneNumber}</a>
+                        </div>
+                      ))
+                    ) : selectedUser.emergencyContact ? (
+                      <div className="emergency-contact-card">
+                        <div className="ec-info">
+                          <span className="ec-name">{selectedUser.emergencyContact.name || 'N/A'}</span>
+                        </div>
+                        <span className="ec-phone">{selectedUser.emergencyContact.phone || 'N/A'}</span>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Row 8: Permissions */}
+            {userFullDetails?.user?.permissions && (
+              <div className="info-row">
+                <div className="info-block">
+                  <span className="info-label">Location Access</span>
+                  <span className={`info-value ${userFullDetails.user.permissions.allowLocationAccess ? 'status-online' : 'status-offline'}`}>
+                    {userFullDetails.user.permissions.allowLocationAccess ? '✓ Allowed' : '✕ Denied'}
+                  </span>
+                </div>
+                <div className="info-block">
+                  <span className="info-label">Notifications</span>
+                  <span className={`info-value ${userFullDetails.user.permissions.allowNotificationAccess ? 'status-online' : 'status-offline'}`}>
+                    {userFullDetails.user.permissions.allowNotificationAccess ? '✓ Allowed' : '✕ Denied'}
+                  </span>
+                </div>
+                <div className="info-block">
+                  <span className="info-label">SMS Access</span>
+                  <span className={`info-value ${userFullDetails.user.permissions.allowSmsAccess ? 'status-online' : 'status-offline'}`}>
+                    {userFullDetails.user.permissions.allowSmsAccess ? '✓ Allowed' : '✕ Denied'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Row 9: Groups */}
+            {userFullDetails?.groups?.length > 0 && (
+              <div className="info-row detail-section-row">
+                <div className="info-block full">
+                  <span className="info-label">
+                    👥 Groups <span className="count-badge">{userFullDetails.groups.length}</span>
+                  </span>
+                  <div className="groups-list">
+                    {userFullDetails.groups.map((group, i) => (
+                      <div key={i} className="group-card">
+                        <div className="group-info">
+                          <span className="group-name">{group.name}</span>
+                          {group.description && <span className="group-desc">{group.description}</span>}
+                        </div>
+                        <div className="group-meta">
+                          <span className={`group-role ${group.role}`}>{group.role}</span>
+                          <span className="group-members">{group.memberCount} members</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Row 10: Recent Alerts */}
+            {userFullDetails?.recentAlerts?.length > 0 && (
+              <div className="info-row detail-section-row">
+                <div className="info-block full">
+                  <span className="info-label">
+                    ⚠️ Recent Alerts <span className="count-badge">{userFullDetails.recentAlerts.length}</span>
+                  </span>
+                  <div className="recent-alerts-list">
+                    {userFullDetails.recentAlerts.map((alert, i) => (
+                      <div key={i} className={`recent-alert-card severity-${alert.severity}`}>
+                        <div className="ra-header">
+                          <span className={`ra-type ${alert.type}`}>{alert.type?.replace(/_/g, ' ')}</span>
+                          <span className={`ra-severity ${alert.severity}`}>{alert.severity}</span>
+                          <span className={`ra-status ${alert.status}`}>{alert.status}</span>
+                        </div>
+                        {alert.description && <p className="ra-description">{alert.description}</p>}
+                        <div className="ra-footer">
+                          <span className="ra-time">{getRelativeTime(alert.createdAt)}</span>
+                          {alert.location && (
+                            <span className="ra-location">{alert.location.latitude?.toFixed(4)}, {alert.location.longitude?.toFixed(4)}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Row 11: User Videos */}
             <div className="info-row videos-row">
               <div className="info-block full">
                 <span className="info-label">
